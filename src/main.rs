@@ -1,5 +1,5 @@
 mod upbit;
-use std::env;
+use std::{env, collections::HashMap};
 
 use crate::upbit::Client;
 
@@ -9,7 +9,12 @@ async fn main(){
 
     let secret_key = env::var("SECRET_KEY").expect("enviroment variable SECRET_KEY is not set!");
     let access_key = env::var("ACCESS_KEY").expect("enviroment variable ACCESS_KEY is not set!");
-    let cli = Client::new("hello", "world");
-    println!("{}", secret_key);
-    println!("{}", access_key);
+    let client = Client::new("hello", "world");
+    println!("{}", client.generate_jwt(None));
+    
+    let mut hashmap = HashMap::<&str, &str>::new();
+    hashmap.insert("hello", "world");
+    hashmap.insert("yao", "ho");
+    println!("{}", client.generate_jwt(Some(&hashmap)));
+
 }
