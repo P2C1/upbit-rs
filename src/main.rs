@@ -26,4 +26,8 @@ async fn main() {
     // step 5 : test query_market_all
     println!("=================test query_market_all()================");
     println!("res :: {:?}", client.query_market_all(true).await);
+
+    // step 6 : test query_order_chance
+    println!("=================test query_order_chance()================");
+    println!("res :: {:?}", client.query_orders_chance("KRW-BTC").await);
 }

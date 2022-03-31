@@ -56,8 +56,6 @@ impl Payload for ParamPayload {
 pub struct Client {
     access_key: String,
     secret_key: String,
-    nonce: String,
-    non_param_payload: NonParamPayload,
     client: reqwestClient,
 }
 
@@ -68,11 +66,6 @@ impl Client {
         Client {
             access_key: access_key.to_string(),
             secret_key: secret_key.to_string(),
-            nonce: Uuid::new_v4().to_string(),
-            non_param_payload: NonParamPayload {
-                access_key: access_key.to_string(),
-                nonce: Uuid::nil().to_string(),
-            },
             client: reqwest::Client::new(),
         }
     }
@@ -81,7 +74,7 @@ impl Client {
         match query {
             None => NonParamPayload {
                 access_key: self.access_key.clone(),
-                nonce: self.nonce.clone(),
+                nonce: Uuid::new_v4().to_string(),
             }
             .to_jwt(&self.secret_key),
             Some(qs_map) => {
@@ -90,11 +83,12 @@ impl Client {
                     .map(|(k, v)| format!("{}={}", k, v))
                     .reduce(|a, b| format!("{}&{}", a, b))
                     .unwrap();
+                // let qs = urlencode(&qs);
                 ParamPayload {
                     access_key: self.access_key.clone(),
-                    nonce: self.nonce.clone(),
+                    nonce: Uuid::new_v4().to_string(),
                     query_hash_alg: "SHA512".to_string(),
-                    query_hash: util::hash::<Sha512>(&urlencode(&qs).as_bytes()),
+                    query_hash: util::hash::<Sha512>(qs.as_bytes()).to_string(),
                 }
                 .to_jwt(&self.secret_key)
             }
@@ -113,7 +107,7 @@ impl Client {
     }
 
     pub async fn query_market_all(&self, is_details: bool) -> serde_json::Value {
-        let mut query = HashMap::from([("isDetails", is_details.to_string())]);
+        let query = HashMap::from([("isDetails", is_details.to_string())]);
         let res = self
             .client
             .get(format!("{}/market/all", Client::API_URL))
@@ -121,6 +115,28 @@ impl Client {
                 AUTHORIZATION,
                 format!("Bearer {}", self.generate_jwt(Some(&query))),
             )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    /***
+     * 주문 가능 정보
+     *
+     * - 마켓별 주문 가능 정보를 확인한다
+     */
+    pub async fn query_orders_chance(&self, market: &str) -> serde_json::Value {
+        let query = HashMap::from([("market", market.to_string())]);
+        let res = self
+            .client
+            .get(format!("{}/orders/chance", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
             .send()
             .await
             .unwrap();
