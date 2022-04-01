@@ -51,4 +51,11 @@ async fn main() {
             .delete_order(Some("e2c04420-db90-4aab-a53a-46b0f2a8bd8a"), None)
             .await
     );
+
+    // step 8 : minutes candle
+    println!("===================test minutes candles..===================");
+    println!(
+        "res:: {:#?}",
+        client.get_candles_minutes(1, "KRW-BTC", None, None).await
+    );
 }

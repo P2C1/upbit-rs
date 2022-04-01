@@ -184,6 +184,9 @@ impl Client {
         res.json::<serde_json::Value>().await.unwrap()
     }
 
+    /**
+     * 주문 취소 접수
+     */
     pub async fn delete_order(
         &self,
         uuid: Option<&str>,
@@ -201,6 +204,132 @@ impl Client {
         let res = self
             .client
             .delete(format!("{}/order", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    pub async fn get_candles_minutes(
+        &self,
+        unit: i32,
+        market: &str,
+        to: Option<&str>,
+        count: Option<i32>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::from([("market", market.to_string())]);
+        match to {
+            None => None,
+            Some(value) => query.insert("to", value.to_string()),
+        };
+        match count {
+            None => None,
+            Some(value) => query.insert("count", format!("{}", value)),
+        };
+        let res = self
+            .client
+            .get(format!(
+                "{}/candles/minutes/{}",
+                Client::API_URL,
+                unit.to_string(),
+            ))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    pub async fn get_candles_days(
+        &self,
+        market: &str,
+        to: Option<&str>,
+        count: Option<i32>,
+        converting_price_unit: Option<&str>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::from([("market", market.to_string())]);
+        match to {
+            None => None,
+            Some(value) => query.insert("to", value.to_string()),
+        };
+        match count {
+            None => None,
+            Some(value) => query.insert("count", format!("{}", value)),
+        };
+        match converting_price_unit {
+            None => None,
+            Some(value) => query.insert("convertingPriceUnit", value.to_string()),
+        };
+        let res = self
+            .client
+            .get(format!("{}/candles/days", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    pub async fn get_candles_weeks(
+        &self,
+        market: &str,
+        to: Option<&str>,
+        count: Option<i32>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::from([("market", market.to_string())]);
+        match to {
+            None => None,
+            Some(value) => query.insert("to", value.to_string()),
+        };
+        match count {
+            None => None,
+            Some(value) => query.insert("count", format!("{}", value)),
+        };
+        let res = self
+            .client
+            .get(format!("{}/candles/weeks", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    pub async fn get_candles_months(
+        &self,
+        market: &str,
+        to: Option<&str>,
+        count: Option<i32>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::from([("market", market.to_string())]);
+        match to {
+            None => None,
+            Some(value) => query.insert("to", value.to_string()),
+        };
+        match count {
+            None => None,
+            Some(value) => query.insert("count", format!("{}", value)),
+        };
+        let res = self
+            .client
+            .get(format!("{}/candles/months", Client::API_URL))
             .header(
                 AUTHORIZATION,
                 format!("Bearer {}", self.generate_jwt(Some(&query))),
