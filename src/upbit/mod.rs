@@ -5,6 +5,7 @@ use reqwest::{header::AUTHORIZATION, Client as reqwestClient};
 use serde::Serialize;
 use sha2::Sha512;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::str;
 use urlencoding::encode as urlencode;
 use uuid::Uuid;
@@ -95,7 +96,10 @@ impl Client {
         }
     }
 
-    pub async fn query_account(&self) -> serde_json::Value {
+    /**
+     * 전체 계좌 조회
+     */
+    pub async fn get_account(&self) -> serde_json::Value {
         let res = self
             .client
             .get(format!("{}/accounts", Client::API_URL))
@@ -106,7 +110,10 @@ impl Client {
         res.json::<serde_json::Value>().await.unwrap()
     }
 
-    pub async fn query_market_all(&self, is_details: bool) -> serde_json::Value {
+    /**
+     * 마켓 코드 조회
+     */
+    pub async fn get_market_all(&self, is_details: bool) -> serde_json::Value {
         let query = HashMap::from([("isDetails", is_details.to_string())]);
         let res = self
             .client
@@ -124,14 +131,76 @@ impl Client {
 
     /***
      * 주문 가능 정보
-     *
-     * - 마켓별 주문 가능 정보를 확인한다
      */
-    pub async fn query_orders_chance(&self, market: &str) -> serde_json::Value {
+    pub async fn get_orders_chance(&self, market: &str) -> serde_json::Value {
         let query = HashMap::from([("market", market.to_string())]);
         let res = self
             .client
             .get(format!("{}/orders/chance", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+    /**
+     * 주문하기
+     */
+    pub async fn post_orders(
+        &self,
+        market: &str,
+        side: &str,
+        volume: &str,
+        price: &str,
+        ord_type: &str,
+        identifier: Option<&str>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::from([
+            ("market", market.to_string()),
+            ("side", side.to_string()),
+            ("volume", volume.to_string()),
+            ("price", price.to_string()),
+            ("ord_type", ord_type.to_string()),
+        ]);
+        match identifier {
+            Some(str) => query.insert("identifier", str.to_string()),
+            None => None,
+        };
+        let res = self
+            .client
+            .post(format!("{}/orders", Client::API_URL))
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.generate_jwt(Some(&query))),
+            )
+            .query(&query)
+            .send()
+            .await
+            .unwrap();
+        res.json::<serde_json::Value>().await.unwrap()
+    }
+
+    pub async fn delete_order(
+        &self,
+        uuid: Option<&str>,
+        identifier: Option<&str>,
+    ) -> serde_json::Value {
+        let mut query = HashMap::<&str, String>::new();
+        match uuid {
+            None => None,
+            Some(value) => query.insert("uuid", value.to_string()),
+        };
+        match identifier {
+            None => None,
+            Some(value) => query.insert("identifier", value.to_string()),
+        };
+        let res = self
+            .client
+            .delete(format!("{}/order", Client::API_URL))
             .header(
                 AUTHORIZATION,
                 format!("Bearer {}", self.generate_jwt(Some(&query))),
